@@ -1,0 +1,55 @@
+name: karavan
+
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    ports:
+      - "5555:5000"
+    labels:
+      - "org.apache.camel.karavan/type=internal" 
+    restart: always
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__server__ROOT_URL=http://localhost:3000/
+    volumes:
+      - ./gitea-data:/data
+    labels:
+      - "org.apache.camel.karavan/type=internal"         
+    ports:
+      - "3000:3000"
+      - "222:22"
+    restart: always
+
+  karavan:
+    image: ghcr.io/apache/camel-karavan:4.10.2
+    container_name: karavan
+    depends_on:
+      - gitea
+    ports:
+      - "8080:8080"
+    environment:
+      - KARAVAN_GIT_REPOSITORY=http://gitea:3000/karavan/karavan.git
+      - KARAVAN_GIT_USERNAME=karavan
+      - KARAVAN_GIT_PASSWORD=karavan!123
+      - KARAVAN_GIT_BRANCH=main
+      - KARAVAN_CONTAINER_IMAGE_GROUP=karavan
+      - KARAVAN_DOCKER_NETWORK=karavan
+      - KARAVAN_CONTAINER_IMAGE_REGISTRY=registry:5000
+      - KARAVAN_CONTAINER_IMAGE_REGISTRY_INSECURE=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "org.apache.camel.karavan/type=internal"
+    restart: always
+
+networks:
+  default:
+    name: karavan
+    external: "true"
