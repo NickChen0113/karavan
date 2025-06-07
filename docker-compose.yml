@@ -1,16 +1,16 @@
 name: karavan
 
 services:
-  registry:
+  registry: # Docker registry as local docker hub
     image: registry:2
-    container_name: registry
+    container_name: registry # Containers communicate with this name
     ports:
       - "5555:5000"
     labels:
       - "org.apache.camel.karavan/type=internal" 
     restart: always
 
-  gitea:
+  gitea: # Gitea as a local Git server
     image: gitea/gitea:latest
     container_name: gitea
     environment:
@@ -19,7 +19,7 @@ services:
       - GITEA__database__DB_TYPE=sqlite3
       - GITEA__server__ROOT_URL=http://localhost:3000/
     volumes:
-      - ./gitea-data:/data
+      - ./gitea-data:/data # Persistent storage for Gitea data
     labels:
       - "org.apache.camel.karavan/type=internal"         
     ports:
@@ -32,24 +32,25 @@ services:
     container_name: karavan
     depends_on:
       - gitea
+      - registry
     ports:
       - "8080:8080"
     environment:
       - KARAVAN_GIT_REPOSITORY=http://gitea:3000/karavan/karavan.git
-      - KARAVAN_GIT_USERNAME=karavan
-      - KARAVAN_GIT_PASSWORD=karavan!123
+      - KARAVAN_GIT_USERNAME=${KARAVAN_GIT_USERNAME}
+      - KARAVAN_GIT_PASSWORD=${KARAVAN_GIT_PASSWORD}
       - KARAVAN_GIT_BRANCH=main
       - KARAVAN_CONTAINER_IMAGE_GROUP=karavan
       - KARAVAN_DOCKER_NETWORK=karavan
       - KARAVAN_CONTAINER_IMAGE_REGISTRY=registry:5000
-      - KARAVAN_CONTAINER_IMAGE_REGISTRY_INSECURE=true
+      - KARAVAN_CONTAINER_IMAGE_REGISTRY_INSECURE=true # Allow insecure registry
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     labels:
       - "org.apache.camel.karavan/type=internal"
     restart: always
 
-networks:
+networks: # Define networks for the services. Remember to put same config in Karavan->resources->configuration->build.docker-compose.yml
   default:
     name: karavan
     external: "true"
